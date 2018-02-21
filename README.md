@@ -38,7 +38,7 @@ standard library to manage these tasks for you in as easy to use a way as possib
         fmt.Println("All done. All messages should have been printed, but not the println at the end of Start.")
     }
 
-### Documentation
+# Documentation
 
 ## Base functions
 
@@ -51,7 +51,7 @@ interface. Usually the struct will embed the Embeddable struct as a value.
 * `func StartName(s Starter) Ref`: Starts a coroutine with the given name using the struct implementing the Starter
 interface. Usually the struct will embed the Embeddable struct as a value.
 
-# Embeddable
+### Embeddable
 
 Designed to be embedded into a struct as a value as shown in the above example. If one of the Start methods that take
 a function is used, a pointer to one of these will be passed in so you don't have to always create a struct that
@@ -74,7 +74,7 @@ not have any further code run except for deferred functions.
 this is used. Might be useful as opposed to a simple `return` if you are deep in a call stack.
 
 
-# Ref
+### Ref
 
 Functions available:
 
