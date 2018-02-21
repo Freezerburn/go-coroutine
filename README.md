@@ -8,7 +8,7 @@ standard library to manage these tasks for you in as easy to use a way as possib
 # Example
 
     type MyCoroutine struct {
-        lines int
+        line int
         coroutine.Embeddable
     }
 
