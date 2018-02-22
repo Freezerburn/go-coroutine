@@ -117,6 +117,7 @@ func (e *Embeddable) RecvFor(duration time.Duration) (interface{}, bool) {
 	}
 
 	if len(e.mailbox) == 0 {
+		e.mailboxLock.Unlock()
 		return nil, false
 	}
 
