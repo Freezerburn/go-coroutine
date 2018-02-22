@@ -47,6 +47,8 @@ func (e *Embeddable) Pause(duration time.Duration) {
 	e.waitTimer.Reset(duration)
 	<-e.waitTimer.C
 
+	// Since there's a period of time that this is doing nothing, there's a chance that external code could stop
+	// this coroutine while it's paused. So we check that before returning control to the coroutine.
 	if !e.running {
 		panic(Stop{})
 	}
