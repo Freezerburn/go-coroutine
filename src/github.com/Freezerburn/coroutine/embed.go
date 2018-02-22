@@ -30,21 +30,14 @@ type Embeddable struct {
 //
 // If this coroutine has been stopped by external code using the Ref returned by all Start functions, then it will
 // immediately stop, and no further code outside of deferred functions will be executed in this coroutine.
-func (e *Embeddable) Pause(duration time.Duration) {
+func (e *Embeddable) Pause(d time.Duration) {
 	if !e.running {
 		// Every coroutine is wrapped in a function that recovers from a panic, so this is guaranteed to immediately
 		// stop execution of the coroutine completely without stopping the rest of the program.
 		panic(Stop{})
 	}
 
-	// Guarantee the timer channel is drained.
-	// Despite the docs saying to only check the return value of Stop, it's possible for Stop to return false without
-	// there being an item in the channel, so we also double-check if there is an item in the channel before attempting
-	// to drain it.
-	if !e.waitTimer.Stop() && len(e.waitTimer.C) > 0 {
-		<-e.waitTimer.C
-	}
-	e.waitTimer.Reset(duration)
+	resetTimer(e.waitTimer, d)
 	<-e.waitTimer.C
 
 	// Since there's a period of time that this is doing nothing, there's a chance that external code could stop
@@ -52,6 +45,20 @@ func (e *Embeddable) Pause(duration time.Duration) {
 	if !e.running {
 		panic(Stop{})
 	}
+}
+
+// Instead of constructing a new Timer object, which can be expensive if done frequently, we reset an existing one
+// to a given duration immediately before using it.
+func resetTimer(t *time.Timer, d time.Duration) {
+	if !t.Stop() {
+		// I've seen cases where Stop returns false, but there isn't an item in the channel, causing the receive to
+		// hang forever.
+		select {
+		case <-t.C:
+		default:
+		}
+	}
+	t.Reset(d)
 }
 
 // Checks the mailbox for any sent messages. If none are in the mailbox, this function will halt the coroutine until
@@ -88,12 +95,12 @@ func (e *Embeddable) Recv() interface{} {
 //
 // If this coroutine has been stopped by external code using the Ref returned by all Start functions, then it will
 // immediately stop, and no further code outside of deferred functions will be executed in this coroutine.
-func (e *Embeddable) RecvFor(duration time.Duration) (interface{}, bool) {
+func (e *Embeddable) RecvFor(d time.Duration) (interface{}, bool) {
 	if !e.running {
 		panic(Stop{})
 	}
 
-	if duration <= 0 {
+	if d <= 0 {
 		return e.RecvImmediate()
 	}
 
@@ -101,11 +108,7 @@ func (e *Embeddable) RecvFor(duration time.Duration) (interface{}, bool) {
 	if len(e.mailbox) == 0 {
 		e.mailboxLock.Unlock()
 
-		if !e.receiveTimer.Stop() && len(e.receiveTimer.C) > 0 {
-			<-e.receiveTimer.C
-		}
-
-		e.receiveTimer.Reset(duration)
+		resetTimer(e.receiveTimer, d)
 		select {
 		case <-e.receiver:
 		case <-e.receiveTimer.C:
