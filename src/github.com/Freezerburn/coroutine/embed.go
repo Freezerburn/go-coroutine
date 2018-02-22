@@ -143,14 +143,13 @@ func (e *Embeddable) RecvImmediate() (interface{}, bool) {
 	}
 
 	e.mailboxLock.Lock()
+	defer e.mailboxLock.Unlock()
 	if len(e.mailbox) == 0 {
-		e.mailboxLock.Unlock()
 		return nil, false
 	}
 
 	r := e.mailbox[0]
 	e.mailbox = e.mailbox[1:]
-	e.mailboxLock.Unlock()
 	return r, true
 }
 
